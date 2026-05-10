@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>오늘 뭐 먹지?</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&family=Black+Han+Sans&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Noto Sans KR', sans-serif;
+    min-height: 100vh;
+    padding: 2rem 1rem;
+    background: #f5f5f0;
+    color: #1a1a1a;
+  }
+
+  .header {
+    text-align: center;
+    margin-bottom: 2rem;
+  }
+
+  .header h1 {
+    font-family: 'Black Han Sans', sans-serif;
+    font-size: 2rem;
+    font-weight: 400;
+    letter-spacing: -0.5px;
+  }
+
+  .header p {
+    font-size: 13px;
+    color: #888;
+    margin-top: 4px;
+  }
+
+  .layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    max-width: 680px;
+    margin: 0 auto;
+  }
+
+  @media (max-width: 520px) {
+    .layout { grid-template-columns: 1fr; }
+  }
+
+  .panel {
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 12px;
+    padding: 1.25rem;
+  }
+
+  .panel-title {
+    font-size: 13px;
+    font-weight: 500;
+    color: #666;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .input-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+
+  .input-row input {
+    flex: 1;
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 14px;
+    padding: 0 12px;
+    height: 36px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    outline: none;
+    color: #1a1a1a;
+    background: #fff;
+  }
+  .input-row input:focus { border-color: #1D9E75; }
+
+  .btn-add {
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 13px;
+    padding: 0 14px;
+    height: 36px;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    background: #f5f5f0;
+    color: #333;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .btn-add:hover { background: #e8e8e0; }
+  .btn-add:active { transform: scale(0.97); }
+
+  .restaurant-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-height: 280px;
+    overflow-y: auto;
+  }
+
+  .restaurant-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 10px;
+    border-radius: 8px;
+    border: 1px solid #eee;
+    font-size: 14px;
+    color: #1a1a1a;
+    background: #fafafa;
+  }
+
+  .restaurant-item.highlight {
+    border-color: #1D9E75;
+    background: #E1F5EE;
+    color: #085041;
+    font-weight: 500;
+  }
+
+  .item-name { flex: 1; }
+
+  .btn-delete {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #bbb;
+    padding: 4px 6px;
+    border-radius: 4px;
+    font-size: 15px;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .btn-delete:hover { color: #E24B4A; background: #fff0f0; }
+
+  .empty-hint {
+    font-size: 13px;
+    color: #bbb;
+    text-align: center;
+    padding: 2rem 0;
+    line-height: 1.8;
+  }
+
+  .result-panel {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    min-height: 200px;
+  }
+
+  .result-emoji {
+    font-size: 3rem;
+    margin-bottom: 12px;
+  }
+
+  .result-label {
+    font-size: 12px;
+    color: #aaa;
+    margin-bottom: 6px;
+    letter-spacing: 1px;
+  }
+
+  .result-name {
+    font-family: 'Black Han Sans', sans-serif;
+    font-size: 1.8rem;
+    font-weight: 400;
+    color: #1a1a1a;
+    margin-bottom: 20px;
+    min-height: 2.5rem;
+  }
+
+  @keyframes pop {
+    0% { transform: scale(0.8); opacity: 0; }
+    70% { transform: scale(1.05); }
+    100% { transform: scale(1); opacity: 1; }
+  }
+
+  .pop-anim { animation: pop 0.35s ease; }
+
+  @keyframes spinAnim {
+    0%, 100% { opacity: 0.4; }
+    50% { opacity: 1; }
+  }
+  .spin-anim { animation: spinAnim 0.12s infinite; }
+
+  .btn-pick {
+    font-family: 'Black Han Sans', sans-serif;
+    font-size: 1rem;
+    font-weight: 400;
+    padding: 14px 36px;
+    border-radius: 100px;
+    border: none;
+    background: #1D9E75;
+    color: #fff;
+    cursor: pointer;
+    letter-spacing: 0.5px;
+    transition: background 0.2s, transform 0.15s;
+  }
+  .btn-pick:hover { background: #0F6E56; }
+  .btn-pick:active { transform: scale(0.96); }
+  .btn-pick:disabled { background: #eee; color: #aaa; cursor: not-allowed; }
+
+  .count-badge {
+    font-size: 11px;
+    background: #e6f1fb;
+    color: #185FA5;
+    padding: 2px 8px;
+    border-radius: 20px;
+    margin-left: auto;
+  }
+
+  .bottom-bar {
+    max-width: 680px;
+    margin: 12px auto 0;
+    display: flex;
+    gap: 8px;
+  }
+
+  .btn-clear {
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 12px;
+    padding: 8px 16px;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+    background: none;
+    color: #888;
+    cursor: pointer;
+  }
+  .btn-clear:hover { color: #E24B4A; border-color: #E24B4A; }
+
+  .ad-banner {
+    max-width: 680px;
+    margin: 20px auto 0;
+    border-radius: 12px;
+    overflow: hidden;
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    text-align: center;
+    padding: 16px 20px;
+  }
+
+  .ad-banner-label {
+    font-size: 10px;
+    color: #ccc;
+    margin-bottom: 8px;
+    letter-spacing: 1px;
+  }
+
+  .ad-section {
+    max-width: 680px;
+    margin: 24px auto 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .ad-banner {
+    border-radius: 12px;
+    overflow: hidden;
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    text-align: center;
+    padding: 16px 20px;
+  }
+
+  .ad-banner-label {
+    font-size: 10px;
+    color: #ccc;
+    margin-bottom: 8px;
+    letter-spacing: 1px;
+  }
+
+  .ad-placeholder {
+    font-size: 12px;
+    color: #bbb;
+  }
+
+  footer {
+    text-align: center;
+    margin-top: 24px;
+    padding-bottom: 2rem;
+    font-size: 11px;
+    color: #ccc;
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>🍽️ 오늘 뭐 먹지?</h1>
+  <p>식당을 추가하고 랜덤으로 뽑아보세요</p>
+</div>
+
+<div class="layout">
+  <div class="panel">
+    <div class="panel-title">
+      📋 식당 목록
+      <span class="count-badge" id="count">0개</span>
+    </div>
+    <div class="input-row">
+      <input type="text" id="input" placeholder="식당 이름 입력..." />
+      <button class="btn-add" onclick="addRestaurant()">추가</button>
+    </div>
+    <ul class="restaurant-list" id="list">
+      <li class="empty-hint" id="empty-hint">아직 식당이 없어요.<br>위에서 추가해보세요!</li>
+    </ul>
+  </div>
+
+  <div class="panel result-panel">
+    <div class="result-emoji" id="result-emoji">🎲</div>
+    <div class="result-label" id="result-label">오늘의 점심</div>
+    <div class="result-name" id="result-name">-</div>
+    <button class="btn-pick" id="btn-pick" onclick="pickRandom()" disabled>뽑기!</button>
+  </div>
+</div>
+
+<div class="bottom-bar">
+  <button class="btn-clear" onclick="clearAll()">전체 삭제</button>
+</div>
+
+<!-- 쿠팡파트너스 광고 배너 3개 영역 -->
+<div class="ad-section">
+
+  <!-- ===== 광고 배너 1 ===== -->
+  <div class="ad-banner">
+    <div class="ad-banner-label">광고</div>
+    <!-- ✏️ 배너 1: 아래 주석을 지우고 쿠팡파트너스 코드를 붙여넣으세요 -->
+    <!--
+    <script src="https://ads-partners.coupang.com/g.js"></script>
+    <script>
+      new PartnerCoupang.G({"id": 여기에_ID_1, "template": "배너템플릿", "trackingCode": "여기에_코드"});
+    </script>
+    -->
+    <p class="ad-placeholder">🛒 쿠팡파트너스 광고 코드 1번을 여기에 삽입하세요</p>
+  </div>
+
+  <!-- ===== 광고 배너 2 ===== -->
+  <div class="ad-banner">
+    <div class="ad-banner-label">광고</div>
+    <!-- ✏️ 배너 2: 아래 주석을 지우고 쿠팡파트너스 코드를 붙여넣으세요 -->
+    <!--
+    <script src="https://ads-partners.coupang.com/g.js"></script>
+    <script>
+      new PartnerCoupang.G({"id": 여기에_ID_2, "template": "배너템플릿", "trackingCode": "여기에_코드"});
+    </script>
+    -->
+    <p class="ad-placeholder">🛒 쿠팡파트너스 광고 코드 2번을 여기에 삽입하세요</p>
+  </div>
+
+  <!-- ===== 광고 배너 3 ===== -->
+  <div class="ad-banner">
+    <div class="ad-banner-label">광고</div>
+    <!-- ✏️ 배너 3: 아래 주석을 지우고 쿠팡파트너스 코드를 붙여넣으세요 -->
+    <!--
+    <script src="https://ads-partners.coupang.com/g.js"></script>
+    <script>
+      new PartnerCoupang.G({"id": 여기에_ID_3, "template": "배너템플릿", "trackingCode": "여기에_코드"});
+    </script>
+    -->
+    <p class="ad-placeholder">🛒 쿠팡파트너스 광고 코드 3번을 여기에 삽입하세요</p>
+  </div>
+
+</div>
+
+<footer>
+  오늘도 맛있는 점심 되세요 🍱
+</footer>
+
+<script>
+  var restaurants = [];
+  var spinning = false;
+  var lastPicked = null;
+
+  var EMOJIS = ['🍜','🍣','🥘','🍱','🌮','🍔','🍕','🥗','🍛','🍲'];
+
+  function saveData() {
+    localStorage.setItem('lunch_picker_list', JSON.stringify(restaurants));
+  }
+
+  function loadData() {
+    var saved = localStorage.getItem('lunch_picker_list');
+    if (saved) {
+      try { restaurants = JSON.parse(saved); } catch(e) { restaurants = []; }
+    }
+  }
+
+  function escHtml(s) {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  function render() {
+    var list = document.getElementById('list');
+    document.getElementById('count').textContent = restaurants.length + '개';
+    document.getElementById('btn-pick').disabled = restaurants.length === 0;
+
+    list.innerHTML = '';
+
+    if (restaurants.length === 0) {
+      var li = document.createElement('li');
+      li.className = 'empty-hint';
+      li.innerHTML = '아직 식당이 없어요.<br>위에서 추가해보세요!';
+      list.appendChild(li);
+      return;
+    }
+
+    for (var i = 0; i < restaurants.length; i++) {
+      (function(index) {
+        var li = document.createElement('li');
+        li.className = 'restaurant-item' + (restaurants[index] === lastPicked ? ' highlight' : '');
+
+        var span = document.createElement('span');
+        span.className = 'item-name';
+        span.textContent = restaurants[index];
+
+        var btn = document.createElement('button');
+        btn.className = 'btn-delete';
+        btn.setAttribute('aria-label', '삭제');
+        btn.textContent = '✕';
+        btn.onclick = function() {
+          remove(index);
+        };
+
+        li.appendChild(span);
+        li.appendChild(btn);
+        list.appendChild(li);
+      })(i);
+    }
+  }
+
+  function addRestaurant() {
+    var input = document.getElementById('input');
+    var name = input.value.trim();
+    if (!name) return;
+    if (restaurants.indexOf(name) !== -1) {
+      input.style.borderColor = '#E24B4A';
+      setTimeout(function() { input.style.borderColor = ''; }, 1000);
+      return;
+    }
+    restaurants.push(name);
+    input.value = '';
+    saveData();
+    render();
+  }
+
+  function remove(i) {
+    if (restaurants[i] === lastPicked) lastPicked = null;
+    restaurants.splice(i, 1);
+    saveData();
+    render();
+  }
+
+  function clearAll() {
+    if (restaurants.length === 0) return;
+    if (!confirm('목록을 전부 삭제할까요?')) return;
+    restaurants = [];
+    lastPicked = null;
+    saveData();
+    document.getElementById('result-name').textContent = '-';
+    document.getElementById('result-emoji').textContent = '🎲';
+    document.getElementById('result-label').textContent = '오늘의 점심';
+    render();
+  }
+
+  function pickRandom() {
+    if (restaurants.length === 0 || spinning) return;
+    spinning = true;
+    document.getElementById('btn-pick').disabled = true;
+    document.getElementById('result-label').textContent = '고르는 중...';
+
+    var resultEl = document.getElementById('result-name');
+    resultEl.className = 'result-name spin-anim';
+
+    var count = 0;
+    var total = 20;
+    var interval = setInterval(function() {
+      var rand = restaurants[Math.floor(Math.random() * restaurants.length)];
+      resultEl.textContent = rand;
+      count++;
+      if (count >= total) {
+        clearInterval(interval);
+        var picked = restaurants[Math.floor(Math.random() * restaurants.length)];
+        lastPicked = picked;
+        resultEl.textContent = picked;
+        resultEl.className = 'result-name pop-anim';
+        document.getElementById('result-emoji').textContent = EMOJIS[Math.floor(Math.random() * EMOJIS.length)];
+        document.getElementById('result-label').textContent = '오늘의 점심은!';
+        document.getElementById('btn-pick').disabled = false;
+        spinning = false;
+        render();
+      }
+    }, 60);
+  }
+
+  document.getElementById('input').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') addRestaurant();
+  });
+
+  loadData();
+  render();
+</script>
+</body>
+</html>
